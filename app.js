@@ -61,16 +61,26 @@ function saveAll(){
 
 function addXP(amount){
     xp.total += amount;
+    checkLevelUp();
+    saveAll();
+    updateXP();
+}
+
+function removeXP(amount){
+    xp.total = Math.max(0, xp.total - amount);
+    if(xp.total < 0) xp.total = 0;
+    saveAll();
+    updateXP();
+}
+
+function checkLevelUp(){
     const threshold = xp.level * 100;
     if(xp.total >= threshold){
         xp.total -= threshold;
         xp.level++;
-        showQuest(`УРОВЕНЬ ${xp.level}!`, `+${amount} XP`);
-    } else {
-        showQuest('КВЕСТ ВЫПОЛНЕН!', `+${amount} XP`);
+        showQuest(`УРОВЕНЬ ${xp.level}!`, `Новый уровень!`);
+        checkLevelUp();
     }
-    saveAll();
-    updateXP();
 }
 
 function showQuest(title, desc){
@@ -135,7 +145,7 @@ function renderToday(){
         item.appendChild(text);
         item.addEventListener('click', ()=>{
             dayTasks[i].done = !dayTasks[i].done;
-            if(dayTasks[i].done) addXP(5);
+            if(dayTasks[i].done) addXP(5); else removeXP(5);
             saveAll();
             renderToday();
         });
@@ -261,7 +271,7 @@ function renderWeekDays(dates){
             item.appendChild(text);
             item.addEventListener('click', ()=>{
                 dayTasks[i].done = !dayTasks[i].done;
-                if(dayTasks[i].done) addXP(5);
+                if(dayTasks[i].done) addXP(5); else removeXP(5);
                 saveAll();
                 renderWeek();
             });
@@ -385,7 +395,7 @@ function renderWorkouts(){
             const w = parseInt(cb.dataset.w);
             const e = parseInt(cb.dataset.e);
             workouts[w].exercises[e].done = !workouts[w].exercises[e].done;
-            if(workouts[w].exercises[e].done) addXP(3);
+            if(workouts[w].exercises[e].done) addXP(3); else removeXP(3);
             saveAll();
             renderWorkouts();
         });
