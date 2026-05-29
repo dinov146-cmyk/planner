@@ -96,6 +96,70 @@ function switchTab(tab){
     document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b=>b.classList.add('active'));
 }
 
+function switchSubTab(sub){
+    document.querySelectorAll('.sub-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.subtab').forEach(s=>s.classList.remove('active'));
+    document.querySelector(`[data-subtab="${sub}"]`).classList.add('active');
+    document.getElementById('subtab-'+sub).classList.add('active');
+}
+
+function renderToday(){
+    const now = new Date();
+    const key = dateKey();
+    if(!tasks[key]) tasks[key] = defaultTasks.map(t=>({...t}));
+    const dayTasks = tasks[key];
+    const doneCount = dayTasks.filter(t=>t.done).length;
+    const pct = dayTasks.length ? Math.round(doneCount/dayTasks.length*100) : 0;
+
+    document.getElementById('todayTitle').textContent = `${DAYS[now.getDay()]}, ${formatDate(now)}`;
+    document.getElementById('todayDone').textContent = doneCount;
+    document.getElementById('todayTotal').textContent = dayTasks.length;
+    document.getElementById('todayPct').textContent = pct+'%';
+    document.getElementById('todayProgressFill').style.width = pct+'%';
+
+    const container = document.getElementById('todayContainer');
+    container.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    const list = document.createElement('div');
+    list.className = 'task-list';
+    dayTasks.forEach((task, i)=>{
+        const item = document.createElement('div');
+        item.className = 'task-item';
+        const cb = document.createElement('div');
+        cb.className = 'checkbox' + (task.done ? ' checked' : '');
+        const text = document.createElement('span');
+        text.className = 'task-text' + (task.done ? ' done' : '');
+        text.textContent = task.text;
+        item.appendChild(cb);
+        item.appendChild(text);
+        item.addEventListener('click', ()=>{
+            dayTasks[i].done = !dayTasks[i].done;
+            if(dayTasks[i].done) addXP(5);
+            saveAll();
+            renderToday();
+        });
+        list.appendChild(item);
+    });
+    card.appendChild(list);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-secondary';
+    addBtn.style.cssText = 'margin-top:10px;padding:6px 12px;font-size:11px';
+    addBtn.textContent = '+ ДОБАВИТЬ ЗАДАЧУ';
+    addBtn.addEventListener('click', ()=>{
+        const text = prompt('Название задачи:');
+        if(text && text.trim()){
+            dayTasks.push({text:text.trim(),done:false});
+            saveAll();
+            renderToday();
+        }
+    });
+    card.appendChild(addBtn);
+    container.appendChild(card);
+    saveAll();
+}
+
 function renderWeek(){
     const dates = getWeekDates(weekOffset);
     const first = dates[0];
@@ -104,8 +168,7 @@ function renderWeek(){
     renderStats(dates);
     renderBarChart(dates);
     renderDonut(dates);
-    renderDays(dates);
-    renderState();
+    renderWeekDays(dates);
 }
 
 function renderStats(dates){
@@ -161,15 +224,12 @@ function renderDonut(dates){
     document.getElementById('donutValue').textContent = pct+'%';
 }
 
-function renderDays(dates){
-    const container = document.getElementById('daysContainer');
+function renderWeekDays(dates){
+    const container = document.getElementById('weekContainer');
     container.innerHTML = '';
-    const today = dateKey();
     dates.forEach(d=>{
         const key = dateKey(d);
-        if(!tasks[key]){
-            tasks[key] = defaultTasks.map(t=>({...t}));
-        }
+        if(!tasks[key]) tasks[key] = defaultTasks.map(t=>({...t}));
         const dayTasks = tasks[key];
         const doneCount = dayTasks.filter(t=>t.done).length;
         const pct = dayTasks.length ? Math.round(doneCount/dayTasks.length*100) : 0;
@@ -399,6 +459,10 @@ function init(){
         btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
     });
 
+    document.querySelectorAll('.sub-tab').forEach(btn=>{
+        btn.addEventListener('click', ()=>switchSubTab(btn.dataset.subtab));
+    });
+
     document.getElementById('prevWeek').addEventListener('click', ()=>{weekOffset--;renderWeek()});
     document.getElementById('nextWeek').addEventListener('click', ()=>{weekOffset++;renderWeek()});
 
@@ -446,7 +510,9 @@ function init(){
         document.getElementById('workoutModal').classList.remove('show');
     });
 
+    renderToday();
     renderWeek();
+    renderState();
     renderWorkouts();
     renderReflection();
 }
